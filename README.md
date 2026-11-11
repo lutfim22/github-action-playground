@@ -1,101 +1,101 @@
 # github-action-playground
 
-Workflow manual untuk membuat PR sebagai `github-actions[bot]`, agar pengguna yang menjalankan workflow tetap dapat mereview dan approve PR sesuai ruleset/branch protection repo.
+Manual workflows that create pull requests as `github-actions[bot]`, allowing the user who starts the workflow to review and approve the resulting PR according to repository rulesets and branch protection.
 
-## Status saat ini dan pengujian
+## Current status and testing
 
-Bootstrap kedua workflow sudah di-merge ke `main`. Branch `test/readme-current-status` menambahkan pembaruan dokumentasi ini untuk menguji pembuatan PR setelah bootstrap. Pengujian langsung melalui Actions belum diverifikasi.
+Both workflows have been merged into `main`. The maintainer has confirmed that the bot workflow works. The `test/readme-current-status` branch contains documentation updates for testing PR creation after the initial setup.
 
-Untuk mengetes versi tanpa PAT:
+To test the workflow without a PAT:
 
-1. Buka **Actions → Create PR (GitHub Actions bot) → Run workflow**.
-2. Pilih **Use workflow from → test/readme-current-status**.
-3. Biarkan `base_repo`, `head_repo`, `head_branch`, `title`, dan `body` kosong; gunakan `base_branch=main` dan `draft=false`.
-4. Jalankan workflow. Hasil yang diharapkan adalah PR ke `main` dengan author `github-actions[bot]` dan judul **docs: update current status and action test instructions**.
-5. Buka link PR dari summary run untuk mereview dan approve menggunakan akunmu. Jalankan lagi dengan input sama untuk mengecek bahwa workflow mengembalikan PR terbuka yang sama.
+1. Open **Actions → Create PR (GitHub Actions bot) → Run workflow**.
+2. Select **Use workflow from → test/readme-current-status**.
+3. Leave `base_repo`, `head_repo`, `head_branch`, `title`, and `body` empty; use `base_branch=main` and `draft=false`.
+4. Run the workflow. The expected result is a PR targeting `main`, authored by `github-actions[bot]`, with the title **docs: update current status and action test instructions**.
+5. Open the PR link from the run summary to review and approve it with your account. Run the workflow again with the same inputs to check that it returns the existing open PR.
 
-Langkah ini menguji pembuatan PR, judul otomatis, dan pemakaian ulang PR di repo yang sama. Source dari fork dan perubahan YAML di branch memerlukan pengujian terpisah. Jangan merge branch uji sebelum mencoba workflow, karena source harus memiliki commit tambahan terhadap base.
+These steps cover PR creation, the automatic title, and reuse of an existing PR within the same repository. Fork sources and workflow changes on a branch require separate tests. Keep the test branch unmerged until testing is complete: the source must contain additional commits relative to the base.
 
-## Workflow utama: tanpa PAT
+## Primary workflow: no PAT required
 
 File: `.github/workflows/create-pr.yml` — **Create PR (GitHub Actions bot)**.
 
-1. Untuk instalasi awal, merge workflow ke **default branch** (`main` di repo ini).
-2. Pastikan **Settings → Actions → General → Workflow permissions → Allow GitHub Actions to create and approve pull requests** aktif. Policy organisasi dapat membatasi pengaturan ini. Workflow meminta `contents: read` dan `pull-requests: write`; tidak perlu memberi semua workflow akses tulis.
-3. Buka **Actions → Create PR (GitHub Actions bot) → Run workflow**.
-4. Pilih branch di **Use workflow from**, isi input jika perlu, lalu jalankan. Link PR muncul di summary run.
+1. For the initial setup, merge the workflow into the **default branch** (`main` in this repository).
+2. Enable **Settings → Actions → General → Workflow permissions → Allow GitHub Actions to create and approve pull requests**. Organization policies may restrict this setting. The workflow requests `contents: read` and `pull-requests: write`; there is no need to grant write access to every workflow.
+3. Open **Actions → Create PR (GitHub Actions bot) → Run workflow**.
+4. Select a branch in **Use workflow from**, provide any input overrides, and run the workflow. The PR link appears in the run summary.
 
-| Input | Default / perilaku |
+| Input | Default / behavior |
 | --- | --- |
-| `base_repo` | Repo tempat workflow dijalankan. Pada versi bot, harus tetap repo ini. |
-| `base_branch` | `main`, bisa diubah ke branch lain di repo tujuan. |
-| `head_repo` | Repo tempat workflow dijalankan; bisa diisi `owner/fork` dari fork network yang sama. |
-| `head_branch` | Branch yang dipilih di **Use workflow from**. Isi eksplisit untuk branch dari fork atau branch lain. |
-| `title` | Subject commit pertama dalam hasil compare base → head: commit yang ada di head tetapi belum ada di base, dalam urutan kronologis API GitHub. Bukan commit pertama sepanjang sejarah repo. |
-| `body` | Kosong. |
+| `base_repo` | The repository running the workflow. Bot mode requires this repository as the target. |
+| `base_branch` | `main`; can be changed to another branch in the target repository. |
+| `head_repo` | The repository running the workflow; accepts `owner/fork` from the same fork network. |
+| `head_branch` | The branch selected in **Use workflow from**. Set this explicitly for a fork branch or another source branch. |
+| `title` | The subject of the first commit in the base-to-head comparison: a commit present in head but absent from base, in the GitHub API's chronological order. This is not the first commit in the repository's entire history. |
+| `body` | Empty. |
 | `draft` | `false`. |
 
-Contoh satu repo: pilih `feature/example` di **Use workflow from**, biarkan input lain kosong/default. Hasilnya PR `feature/example` → `main` di repo ini. Branch tersebut harus sudah memiliki file workflow.
+Same-repository example: select `feature/example` in **Use workflow from** and leave the other inputs empty or at their defaults. This creates a PR from `feature/example` to `main` in this repository. The selected branch must already contain the workflow file.
 
-Contoh source dari fork: jalankan di repo tujuan, isi `head_repo=someone/github-action-playground` dan `head_branch=feature/example`. Biarkan `base_repo` kosong dan `base_branch=main`.
+Fork-source example: run the workflow in the target repository, set `head_repo=someone/github-action-playground` and `head_branch=feature/example`, and leave `base_repo` empty with `base_branch=main`.
 
-PR terbuka yang sudah ada untuk source repo/branch dan target branch yang sama akan dipakai kembali; workflow tidak mengubah judul/body PR lama. Source tanpa commit tambahan akan ditolak. GitHub tetap menentukan apakah perubahan dapat dijadikan PR.
+An existing open PR for the same source repository, source branch, and target branch is reused. The workflow does not update its title or body. A source with no additional commits is rejected. GitHub determines whether the changes can form a PR.
 
-## Fork dan batasan token
+## Forks and token limitations
 
-`GITHUB_TOKEN` hanya berlaku untuk repository tempat workflow dijalankan. Memberi izin membuat/approve PR tidak memberinya akses tulis ke semua fork atau repo pengguna.
+`GITHUB_TOKEN` is scoped to the repository running the workflow. Permission to create or approve PRs does not grant write access to every fork or repository owned by the user.
 
-- Source dari fork publik dapat digunakan selama satu fork network. Source privat harus dapat dibaca oleh token; token bawaan tidak otomatis mendapat akses lintas repo privat.
-- Untuk menjadikan fork lain sebagai **base repo** tanpa PAT, pasang dan jalankan workflow di fork tujuan tersebut. Aktifkan Actions jika masih dinonaktifkan pada fork itu.
-- Kedua repo harus satu fork network; repo yang kebetulan punya isi sama tetapi tidak berhubungan sebagai fork tidak didukung.
-- Workflow tidak melakukan checkout atau menjalankan kode source fork. Input diteruskan sebagai environment variables, bukan disisipkan ke kode JavaScript/shell.
+- Public fork sources can be used within the same fork network. Private sources must be readable by the token; the built-in token does not automatically receive access to other private repositories.
+- To use another fork as the **base repository** without a PAT, install and run the workflow in that target fork. Enable Actions there if it is disabled.
+- Both repositories must belong to the same fork network. Repositories with matching contents but no fork relationship are unsupported.
+- The workflow does not check out or execute source code from the fork. Inputs are passed through environment variables rather than interpolated into JavaScript or shell code.
 
-### Fork tanpa akun pribadi kedua
+### Forking without a second personal account
 
-Kamu dapat membuat fork di **organization** yang kamu kelola memakai akun GitHub yang sama. Buka **Fork → Create a new fork**, lalu pilih organization sebagai **Owner**. Organization harus mengizinkan pembuatan repository/fork dan kamu harus punya izin yang sesuai. Kalau belum punya organization, buat organization terlebih dahulu; akun pribadi kedua tidak diperlukan.
+You can create a fork in an **organization** you manage using your existing GitHub account. Open **Fork → Create a new fork**, then select the organization as the **Owner**. The organization must allow repository and fork creation, and you must have the necessary permissions. If needed, create an organization first; a second personal account is unnecessary.
 
-Repo asal sudah dimiliki `lutfim22`, sehingga fork biasa tidak dapat dibuat lagi di namespace pribadi yang sama dalam fork network tersebut. Membuat repo baru lewat template atau push mirror juga tidak membentuk hubungan fork yang diperlukan untuk pengujian cross-fork.
+The original repository already belongs to `lutfim22`, so a regular fork cannot be created again in the same personal namespace within that fork network. Creating a repository from a template or pushing a mirror does not establish the fork relationship required for cross-fork testing.
 
-Setelah fork publik tersedia, buat branch dan commit tambahan di fork, lalu jalankan workflow bot di repo tujuan dengan `head_repo=NAMA_ORG/NAMA_FORK` dan `head_branch=NAMA_BRANCH`. Untuk tes arah sebaliknya, aktifkan Actions dan jalankan workflow di fork organization sebagai repo tujuan.
+Once the public fork exists, create a branch with an additional commit in the fork. Run the bot workflow in the target repository with `head_repo=ORG_NAME/FORK_NAME` and `head_branch=BRANCH_NAME`. To test the opposite direction, enable Actions and run the workflow in the organization fork as the target repository.
 
-## Dropdown branch
+## Branch dropdowns
 
-GitHub Actions tidak mendukung `workflow_dispatch.inputs` bertipe dropdown dengan opsi yang diambil dinamis dari API. `type: choice` hanya menerima daftar statis di YAML.
+GitHub Actions does not support dynamic API-backed dropdown options for `workflow_dispatch.inputs`. A `type: choice` input only accepts a static list in YAML.
 
-**Use workflow from** sudah menyediakan pemilih branch/tag repo saat ini. Workflow memakai pilihan branch ini sebagai default `head_branch`. Base branch dan branch fork menggunakan input teks. Workflow tidak menulis ulang YAML hanya untuk menyegarkan opsi dropdown.
+**Use workflow from** provides a branch/tag selector for the current repository. The workflow uses the selected branch as the default `head_branch`. Base branches and fork branches use text inputs. The workflow does not rewrite YAML to refresh dropdown options.
 
-## Mencoba perubahan sebelum merge
+## Testing changes before merging
 
-`workflow_dispatch` harus terdaftar di default branch terlebih dahulu. Bootstrap pertama perlu merge ke `main`; workflow tidak melakukan merge otomatis.
+`workflow_dispatch` must first be registered on the default branch. The initial setup requires a merge into `main`; the workflow does not merge itself automatically.
 
-Setelah bootstrap:
+After the initial setup:
 
-1. Buat/push branch pengujian yang memuat perubahan YAML dan commit tambahan.
-2. Jalankan workflow dari **Use workflow from → branch pengujian**. Versi jobs/steps dari ref itu yang dijalankan, sehingga perubahan implementasi dapat dites sebelum merge.
-3. Biarkan `head_branch` kosong untuk membuat PR branch pengujian ke `main`, atau isi source secara eksplisit.
+1. Create and push a test branch containing the YAML changes and an additional commit.
+2. Run the workflow using **Use workflow from → your test branch**. Jobs and steps from that ref are executed, allowing implementation changes to be tested before merging.
+3. Leave `head_branch` empty to create a PR from the test branch to `main`, or specify the source explicitly.
 
-Pemilih workflow bukan dropdown source fork. Untuk fork, tetap pilih ref workflow dari repo tempat workflow dijalankan, lalu isi `head_repo` dan `head_branch`.
+The workflow selector does not select source forks. For a fork source, select a workflow ref from the repository running the workflow, then provide `head_repo` and `head_branch`.
 
-Form input di UI dapat mengikuti definisi pada default branch. Untuk perubahan skema/nama input, perbarui default branch agar form ikut sesuai; gunakan input yang sudah terdaftar saat mengetes implementasi di branch lain.
+The UI input form may follow the definition on the default branch. Update the default branch when changing input names or schemas so that the form matches. Use registered inputs when testing implementation changes on another branch.
 
-## Opsional: workflow PAT terpisah
+## Optional: separate PAT workflow
 
-File: `.github/workflows/create-pr-pat.yml` — **Create PR (PAT)**. Tidak ada fallback PAT tersembunyi pada workflow bot.
+File: `.github/workflows/create-pr-pat.yml` — **Create PR (PAT)**. The bot workflow has no hidden PAT fallback.
 
-Tambahkan repository secret `PR_CREATOR_PAT`, lalu jalankan workflow ini. `base_repo` dapat diisi repo lain yang diizinkan token. Fine-grained PAT memerlukan **Pull requests: Read and write** di target serta akses membaca repo/branch sumber dan target. Pemilik token juga harus punya akses repo yang diperlukan. Cakupan resource owner dan policy organisasi dapat membatasi pilihan lintas fork; classic PAT memerlukan cakupan yang sesuai dengan visibilitas repo.
+Add the repository secret `PR_CREATOR_PAT`, then run this workflow. Set `base_repo` to another repository authorized by the token. A fine-grained PAT needs **Pull requests: Read and write** on the target and read access to the source and target repositories and branches. The token owner must also have the required repository access. Resource-owner scope and organization policies may limit cross-fork choices; a classic PAT requires scopes appropriate to the repository's visibility.
 
-**PR dari PAT dibuat atas nama pemilik PAT.** Jika memakai PAT akunmu sendiri, kamu tetap tidak bisa approve PR itu sendiri. Untuk mempertahankan tujuan approval sambil memakai kredensial lintas repo, gunakan akun bot terpisah atau GitHub App dengan token instalasi dan akses repo yang sesuai; GitHub App bukan bagian dari implementasi ini.
+**A PR created with a PAT is authored by the PAT owner.** Using your own PAT still prevents you from approving that PR yourself. To preserve independent approval while using credentials across repositories, use a separate bot account or a GitHub App with an installation token and appropriate repository access. GitHub App setup is outside this implementation.
 
-## Review PR dan CI
+## PR review and CI
 
-Approval review PR dan approval menjalankan workflow CI adalah dua tindakan berbeda. Bot membuat PR, lalu manusia melakukan review sesuai aturan repo; workflow ini tidak melakukan approval atau merge otomatis.
+Approving a PR review and approving a CI workflow run are separate actions. The bot creates the PR, and a human reviews it according to repository rules. These workflows do not automatically approve or merge PRs.
 
-Dokumentasi GitHub saat ini menjelaskan bahwa event `pull_request` tipe `opened`, `synchronize`, atau `reopened` yang ditimbulkan `GITHUB_TOKEN` dapat menghasilkan run berstatus **approval-required**. Pengguna dengan akses write dapat memilih **Approve workflows to run**. Pada host/versi yang belum mendukung perilaku tersebut, event dari token bawaan umumnya tidak memicu workflow lanjutan; `workflow_dispatch` dan `repository_dispatch` merupakan pengecualian. Jangan mengasumsikan CI sudah berjalan hanya karena PR berhasil dibuat.
+Current GitHub documentation describes `pull_request` events of type `opened`, `synchronize`, or `reopened` generated using `GITHUB_TOKEN` as potentially creating runs in an **approval-required** state. A user with write access can select **Approve workflows to run**. On hosts or versions without that behavior, events generated by the built-in token generally do not trigger subsequent workflows; `workflow_dispatch` and `repository_dispatch` are exceptions. A successfully created PR does not establish that CI has run.
 
-Referensi:
+## References
 
-- [Menjalankan workflow manual](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
-- [Input workflow_dispatch](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_dispatchinputs)
+- [Running a workflow manually](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
+- [workflow_dispatch inputs](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_dispatchinputs)
 - [GITHUB_TOKEN](https://docs.github.com/en/actions/concepts/security/github_token)
-- [Perilaku event dari GITHUB_TOKEN, sumber dokumentasi GitHub](https://github.com/github/docs/blob/main/data/reusables/actions/actions-do-not-trigger-workflows.md)
-- [API create pull request dan cross-repo head](https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request)
+- [Events generated by GITHUB_TOKEN, GitHub documentation source](https://github.com/github/docs/blob/main/data/reusables/actions/actions-do-not-trigger-workflows.md)
+- [Create pull request API and cross-repository heads](https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request)
