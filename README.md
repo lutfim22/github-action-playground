@@ -2,6 +2,20 @@
 
 Workflow manual untuk membuat PR sebagai `github-actions[bot]`, agar pengguna yang menjalankan workflow tetap dapat mereview dan approve PR sesuai ruleset/branch protection repo.
 
+## Status saat ini dan pengujian
+
+Bootstrap kedua workflow sudah di-merge ke `main`. Branch `test/readme-current-status` menambahkan pembaruan dokumentasi ini untuk menguji pembuatan PR setelah bootstrap. Pengujian langsung melalui Actions belum diverifikasi.
+
+Untuk mengetes versi tanpa PAT:
+
+1. Buka **Actions → Create PR (GitHub Actions bot) → Run workflow**.
+2. Pilih **Use workflow from → test/readme-current-status**.
+3. Biarkan `base_repo`, `head_repo`, `head_branch`, `title`, dan `body` kosong; gunakan `base_branch=main` dan `draft=false`.
+4. Jalankan workflow. Hasil yang diharapkan adalah PR ke `main` dengan author `github-actions[bot]` dan judul **docs: update current status and action test instructions**.
+5. Buka link PR dari summary run untuk mereview dan approve menggunakan akunmu. Jalankan lagi dengan input sama untuk mengecek bahwa workflow mengembalikan PR terbuka yang sama.
+
+Langkah ini menguji pembuatan PR, judul otomatis, dan pemakaian ulang PR di repo yang sama. Source dari fork dan perubahan YAML di branch memerlukan pengujian terpisah. Jangan merge branch uji sebelum mencoba workflow, karena source harus memiliki commit tambahan terhadap base.
+
 ## Workflow utama: tanpa PAT
 
 File: `.github/workflows/create-pr.yml` — **Create PR (GitHub Actions bot)**.
@@ -35,6 +49,14 @@ PR terbuka yang sudah ada untuk source repo/branch dan target branch yang sama a
 - Untuk menjadikan fork lain sebagai **base repo** tanpa PAT, pasang dan jalankan workflow di fork tujuan tersebut. Aktifkan Actions jika masih dinonaktifkan pada fork itu.
 - Kedua repo harus satu fork network; repo yang kebetulan punya isi sama tetapi tidak berhubungan sebagai fork tidak didukung.
 - Workflow tidak melakukan checkout atau menjalankan kode source fork. Input diteruskan sebagai environment variables, bukan disisipkan ke kode JavaScript/shell.
+
+### Fork tanpa akun pribadi kedua
+
+Kamu dapat membuat fork di **organization** yang kamu kelola memakai akun GitHub yang sama. Buka **Fork → Create a new fork**, lalu pilih organization sebagai **Owner**. Organization harus mengizinkan pembuatan repository/fork dan kamu harus punya izin yang sesuai. Kalau belum punya organization, buat organization terlebih dahulu; akun pribadi kedua tidak diperlukan.
+
+Repo asal sudah dimiliki `lutfim22`, sehingga fork biasa tidak dapat dibuat lagi di namespace pribadi yang sama dalam fork network tersebut. Membuat repo baru lewat template atau push mirror juga tidak membentuk hubungan fork yang diperlukan untuk pengujian cross-fork.
+
+Setelah fork publik tersedia, buat branch dan commit tambahan di fork, lalu jalankan workflow bot di repo tujuan dengan `head_repo=NAMA_ORG/NAMA_FORK` dan `head_branch=NAMA_BRANCH`. Untuk tes arah sebaliknya, aktifkan Actions dan jalankan workflow di fork organization sebagai repo tujuan.
 
 ## Dropdown branch
 
